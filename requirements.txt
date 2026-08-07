@@ -1,0 +1,12 @@
+pyTelegramBotAPI
+Pillow
+opencv-python
+psutil
+sounddevice
+scipy
+pynput
+pyperclip
+mss
+numpy
+tabulate
+geoip2

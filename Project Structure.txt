@@ -1,0 +1,10 @@
+your_project_folder/
+├── bot.py          (Main RAT + Forensics)
+├── utils.py
+├── scanner.py
+├── network.py
+├── forensics.py
+├── database/       
+│   ├── GeoLite2-City.mmdb
+│   └── GeoLite2-ASN.mmdb
+└── requirements.txt
