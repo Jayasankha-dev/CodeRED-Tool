@@ -6,6 +6,8 @@
 [![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)](https://core.telegram.org/bots)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+https://jayasankha-dev.github.io/CodeRED-Tool/
+
 ---
 
 ## ⚠️ Legal Disclaimer
