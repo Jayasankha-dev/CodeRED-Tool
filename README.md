@@ -159,6 +159,8 @@ python -m PyInstaller --onefile --noconsole bot.py --add-data "database;database
 
 ### 🔹 Forensic Commands
 
+> **Note:** "Please note that the /shell command must be turned off (disabled) before running these forensic commands."
+
 | Command | Description |
 |---------|-------------|
 | `/forensic` | Show forensic menu |
