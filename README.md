@@ -67,7 +67,7 @@ AEGIS-X/
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/yourusername/AEGIS-X.git](https://github.com/Jayasankha-dev/CodeRED-Tool.git
+git clone https://github.com/Jayasankha-dev/CodeRED-Tool.git
 cd AEGIS-X
 ```
 
