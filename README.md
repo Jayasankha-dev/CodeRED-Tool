@@ -68,7 +68,7 @@ AEGIS-X/
 ### 1️⃣ Clone the Repository
 ```bash
 git clone https://github.com/Jayasankha-dev/CodeRED-Tool.git
-cd AEGIS-X
+cd CodeRED-Tool.git
 ```
 
 ### 2️⃣ Install Dependencies
