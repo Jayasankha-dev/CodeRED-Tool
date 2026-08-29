@@ -3,35 +3,48 @@ import geoip2.database
 import os
 import subprocess
 import json
-import time
-import utils
+import requests
 
-# Paths to GeoIP Databases (Create a folder named 'database' and place .mmdb files)
-CITY_DB_PATH = utils.get_resource_path(os.path.join("database", "GeoLite2-City.mmdb"))
-ASN_DB_PATH = utils.get_resource_path(os.path.join("database", "GeoLite2-ASN.mmdb"))
+# Use only Country database (no City)
+COUNTRY_DB_PATH = os.path.join("database", "GeoLite2-Country.mmdb")
+ASN_DB_PATH = os.path.join("database", "GeoLite2-ASN.mmdb")
 
 def get_ip_details(ip_address):
-    """Provides Geo-IP and ISP data for a given IP."""
-    if ip_address in ("127.0.0.1", "::1") or ip_address.startswith(("192.168.", "10.", "172.16.")):
+    if ip_address in ("127.0.0.1", "::1") or ip_address.startswith(("192.168.", "10.", "172.16.", "169.254.")):
         return "Local Network", "Internal", "Private Range"
     
-    country, city, owner = "Unknown", "Unknown", "Unknown"
+    country = "Unknown"
+    owner = "Unknown"
+    
+    # Try local GeoIP Country database first
     try:
-        if os.path.exists(CITY_DB_PATH):
-            with geoip2.database.Reader(CITY_DB_PATH) as reader:
-                response = reader.city(ip_address)
+        if os.path.exists(COUNTRY_DB_PATH):
+            with geoip2.database.Reader(COUNTRY_DB_PATH) as reader:
+                response = reader.country(ip_address)
                 country = response.country.name if response.country.name else "Unknown"
-                city = response.city.name if response.city.name else "N/A"
         if os.path.exists(ASN_DB_PATH):
             with geoip2.database.Reader(ASN_DB_PATH) as asn_reader:
                 asn_response = asn_reader.asn(ip_address)
                 owner = asn_response.autonomous_system_organization if asn_response.autonomous_system_organization else "Unknown"
+        if country != "Unknown":
+            return country, "N/A", owner
     except Exception:
         pass
-    return country, city, owner
+    
+    # Fallback to free online API (ip-api.com) – gives country and ISP
+    try:
+        response = requests.get(f"http://ip-api.com/json/{ip_address}?fields=country,isp", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('status') == 'success':
+                country = data.get('country', 'Unknown')
+                owner = data.get('isp', 'Unknown')
+    except Exception:
+        pass
+        
+    return country, "N/A", owner
 
 def get_network_connections():
-    """Fetches established connections."""
     connections_list = []
     for conn in psutil.net_connections(kind='inet'):
         raddr = getattr(conn, 'raddr', None)
@@ -46,7 +59,6 @@ def get_network_connections():
                     proc_name = "System/Kernel"
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 proc_name = "Hidden/Unknown"
-
             country, city, owner = get_ip_details(remote_ip)
             connections_list.append({
                 "pid": pid if pid else 0,
@@ -71,7 +83,6 @@ def get_listening_ports():
                     proc_name = "System"
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 proc_name = "Unknown"
-            
             laddr = conn.laddr
             port = laddr.port if laddr else 0
             protocol = 'TCP' if conn.type == 1 else 'UDP'
