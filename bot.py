@@ -609,20 +609,62 @@ def get_processes(message):
     except Exception as e:
         bot.reply_to(message, f"Error: {str(e)}")
 
+
 @bot.message_handler(commands=["network"])
 def get_network(message):
     if not is_authorized(message):
         bot.reply_to(message, "Unauthorized user!")
         return
-    bot.reply_to(message, "🌐 Scanning network connections...")
+
+    bot.reply_to(message, "Scanning network connections...")
+
     try:
         conns = network.get_network_connections()
-        output = "🌐 **Network Connections**\n\n"
+
+        if not conns:
+            bot.reply_to(
+                message,
+                "No active network connections found."
+            )
+            return
+
+        output = "🌐 Network Connections\n\n"
+
         for c in conns:
-            output += f"• {c['name']} | {c['ip']} | {c['country']}\n"
-        send_long_text(message.chat.id, output, filename="network.txt", caption="🌐 Network Connections")
+            name = c.get("name", "Unknown")
+            pid = c.get("pid", 0)
+            ip = c.get("ip", "Unknown")
+            port = c.get("port", 0)
+            country = c.get("country", "Unknown")
+            city = c.get("city", "N/A")
+            asn = c.get("asn", "N/A")
+            owner = c.get("owner", "Unknown")
+
+            output += (
+                f"• {name}\n"
+                f"  PID: {pid}\n"
+                f"  IP: {ip}\n"
+                f"  Port: {port}\n"
+                f"  Country: {country}\n"
+                f"  City: {city}\n"
+                f"  ASN: {asn}\n"
+                f"  Owner: {owner}\n\n"
+            )
+
+        send_long_text(
+            message.chat.id,
+            output,
+            filename="network.txt",
+            caption="🌐 Network Connections"
+        )
+
     except Exception as e:
-        bot.reply_to(message, f"Error: {str(e)}")
+        bot.reply_to(
+            message,
+            f"Error: {str(e)}"
+        )
+
+
 
 @bot.message_handler(commands=["persistence"])
 def get_persistence(message):
