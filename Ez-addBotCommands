@@ -35,4 +35,3 @@ export - Export all evidence
 shellbomb - Securely wipe directory in 50s
 terminate - Kill processes & wipe folder
 timebomb - Set persistent timebomb wipe
-        
