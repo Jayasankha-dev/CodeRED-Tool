@@ -18,6 +18,11 @@ delete - Delete file/folder <path>
 images - Media handlers
 videos - Media handlers
 pdf - Media handlers
+upload - File Transfer                            
+runbat - C:\test.bat                 
+runps1 - C:\test.ps1                
+createtask - TestTask C:\test.bat   
+deletetask - TestTask   
 forensic - Show forensic menu
 processes - Active processes & signatures
 network - Network connections & Geo-IP
@@ -30,3 +35,4 @@ export - Export all evidence
 shellbomb - Securely wipe directory in 50s
 terminate - Kill processes & wipe folder
 timebomb - Set persistent timebomb wipe
+        
